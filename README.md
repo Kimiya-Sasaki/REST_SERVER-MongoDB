@@ -3,11 +3,12 @@ Express (Node.js) と MongoDB を用いて RESTful な環境を構築する
 # Table Of Contents
 - [事前準備](#prep)
 - [Directory 構成](#directories)
-- [schema.js](#schema)
-- [restapi.js](#restapi)
-- [.env](#env)
-- [app.js](#appjs)
-- [route.rest](#route)
+- 各構成ファイルの詳細説明
+  - [schema.js](#schema)
+  - [restapi.js](#restapi)
+  - [.env](#env)
+  - [app.js](#appjs)
+  - [route.rest](#route)
 
 <h2 id="prep">事前準備</h2>
 
