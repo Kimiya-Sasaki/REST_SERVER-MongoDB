@@ -34,4 +34,4 @@ scripts の項目を以下の内容に置き換える
 
 |構 成|説 明|
 ----|----
-||- schema.js: Table Schema を定義<br/>- restapi.js: REST API の Entrypoint<br/>- .env: 定数定義用<br/>- app.js: アプリケーション本体<br/>- route.rest: REST リクエストを容易に実現する|
+|<img src="./imgs/directories.jpg">|- schema.js: Table Schema を定義<br/>- restapi.js: REST API の Entrypoint<br/>- .env: 定数定義用<br/>- app.js: アプリケーション本体<br/>- route.rest: REST リクエストを容易に実現する|
