@@ -3,17 +3,18 @@ express (Node.js) と MongoDB を用いて RESTful な Server 環境を構築
 # Table Of Contents
 - [事前準備](#prep)
 - [Directory 構成](#directories)
-- 各構成ファイルの詳細説明
+- 各構成ファイルの詳細
   - [crud.js](#crud)
-  - [todo.js](#schema)
-  - [restapi.js](#restapi)
+  - [todo.js](#todo)
+  - [api.js](#api)
   - [.env](#env)
   - [app.js](#appjs)
-  - [route.rest](#route)
+  - [api.rest](#test)
 
 <h2 id="prep">事前準備</h2>
 
 ### 以下のソフトウェアを事前にインストールしておく
+- node (Node.js)
 - npm
 - npx
 - MongoDB
@@ -42,9 +43,9 @@ scripts の項目を以下の内容に置き換える
 ```
 npm start
 ```
-console
+console output
 <pre>
-> reset-server@1.0.0 start
+> server@1.0.0 start
 > nodemon app.js
 
 [nodemon] 2.0.15
@@ -52,126 +53,215 @@ console
 [nodemon] watching path(s): *.*
 [nodemon] watching extensions: js,mjs,json
 [nodemon] starting `node app.js`
-Server started.
-Connected to Database
+Server listening on port 8080
 </pre>
 
 <h2 id="directories">Directry 構成</h2>
 
 |構 成|説 明|
 ----|----
-|<img src="./imgs/directories.jpg">|- crud.js: 実際の CRUD 処理<br/>- todo.js: Toto の DB Schema<br/>- api.js: REST APIs の Routes を定義<br/>- .env: 定数定義<br/>- api.rest: REST APIs デバッグ用<br/>- app.js: アプリケーション本体|
+|<img src="./imgs/directories.jpg">|- crud.js: REST APIs 本体<br/>- todo.js: Data Schema<br/>- api.js: Routes の定義<br/>- .env: 定数定義用<br/>- route.rest: REST APIs Debug 用<br/>- app.js: App 本体
+
+# 各構成ファイルの詳細
+- 各 Program の Codde を紹介
+- 具体的な処理の内容までは解説しないが目的についてはコメントを参照
 
 <h2 id="crud">crud.js</h2>
 
-<h2 id="schema">todo.js</h2>
+CRUD の具体的な処理を記述
+```javascript
+const { validationResult } = require('express-validator');
+const Todo = require('../models/todo');
 
-- 入力されたデータを保存する為の Schema を定義する
-- 項目として name, status を用意する
+// 全ての Todo を取得
+exports.getAllTodos = (req, res, next) => {
+  Todo.find()
+    .then(todos => {
+      res.status(200).json({
+        message: "successfully fetched todos",
+        todos: todos.map(todo => {
+          return { name: todo.name, status: todo.status, id: todo._id.toString()};
+        })
+      });
+  })
+  .catch(err => {
+    if(! err.statusCode) {
+      err.statusCode = 500;
+      next(err);
+    }
+  });
+};
+
+// 特定の Todo を取得
+exports.getSingleTodo = (req, res, next) => {
+  const tid = req.params.tid;
+  Todo.findById(tid)
+    .then(todo => {
+      if(! todo) {
+        const error = new Error('Could not find todo.');
+        error.statusCode = 404;
+        next(error);
+      }
+      res.status(200).json({
+        message: "successfully fetched todo",
+        todo: { name: todo.name, status: todo.status, id: todo._id.toString()}
+      });
+    }).catch(err => {
+      if(! err.statusCode) {
+        err.statusCode = 500;
+        next(err);
+      }
+    });
+};
+
+// 入力されたデータを保存
+exports.postTodo = (req, res, next) => {
+  const errors = validationResult(req);
+  console.log(errors);
+  if(! errors.isEmpty()) {
+    const error = new Error('Validation failed, provided data is incorrect.');
+    error.statusCode = 422;
+    next(error);
+  }
+  const todo = new Todo({
+    name: req.body.name,
+    status: req.body.status
+  });
+  todo.save()
+    .then(todo => {
+      res.status(201).json({
+        message: 'Todo successfully created!',
+        todo: { name: todo.name, status: todo.status, id: todo._id.toString()}
+      });
+    })
+    .catch(err => {
+      if(! err.statusCode) {
+        err.statusCode = 500;
+        next(err);
+      }
+    });
+};
+
+// データの更新
+exports.putTodo = (req, res, next) => {
+  const errors = validationResult(req);
+  if(! errors.isEmpty()) {
+    const error = new Error('Validation failed, provided data is incorrect.');
+    error.statusCode = 422;
+    next(error);
+  }
+  const tid = req.params.tid;
+  Todo.findById(tid)
+    .then(todo => {
+      if(! todo) {
+        const error = new Error('Could not find todo.');
+        error.statusCode = 404;
+        next(error);
+      }
+      todo.status = req.body.status;
+      return todo.save();
+    })
+    .then(todo => {
+      res.status(200).json({ 
+          message: 'Todo updated!', 
+          todo: { name: todo.name, status: todo.status, id: todo._id.toString()} 
+      });
+    }).catch(err => {
+      if(! err.statusCode) {
+        err.statusCode = 500;
+        next(err);
+      }
+    });
+};
+
+// データの削除
+exports.deleteTodo = (req, res, next) => {
+  const tid = req.params.tid;
+  Todo.findById(tid)
+    .then(todo => {
+      if(! todo) {
+        const error = new Error('Could not find todo.');
+        error.statusCode = 404;
+        next(error);
+      }
+      return Todo.findByIdAndRemove(tid);
+    })
+    .then(result => {
+      res.status(200).json({ message: 'Todo deleted.' });
+    })
+    .catch(err => {
+      if(! err.statusCode) {
+        err.statusCode = 500;
+        next(err);
+      }
+    });
+};
+```
+
+<h2 id="todo">todo.js</h2>
 
 ```javascript
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
-
-const todoSchema = new Schema({
-  name: {
+const apiSchema = new mongoose.Schema({
+  username: {
     type: String,
     required: true
   },
-  status: {
-    type: Boolean,
-    require: true
+  message: {
+    type: String,
+    required: true
+  },
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now
   }
-});
+})
 
-module.exports = mongoose.model('Todo', todoSchema);
+module.exports = mongoose.model('messages', apiSchema)
 ```
 
-<h2 id="restapi">restapi.js</h2>
+<h2 id="api">api.js</h2>
 
 ```javascript
-const express = require('express')
-const router = express.Router()
-const schema = require('../models/schema')
+const express = require('express');
+const { body } = require('express-validator');
 
-// Getting all
-router.get('/', async function (req, res) {
-    try {
-      const messages = await schema.find()
-      res.json(messages)
-    } catch (err) {
-      res.status(500).json({ message: err.message })
-    }
-  })
+// 実際の CRUD 処理を定義
+const crudController = require('../controllers/crud');
 
-// Geting one
-router.get('/:id', getMessage, (req, res) => {
-  res.send(res.info)
-})
+// Router を定義
+const router = express.Router();
 
-// Creating one
-router.post('/', async (req, res) => {
-  const message = new schema({
-    username: req.body.username,
-    message: req.body.message
-  })
-  try {
-    const newMessage = await message.save();
-    res.status(201).json(newMessage)
-  } catch (err) {
-    res.status(400).json({ message: err.message })
-  }
-})
+// 全ての Todo を取得
+router.get('/get', crudController.getAllTodos);
 
-// Updating one
-router.patch('/:id', getMessage, async (req, res) => {
-  if (req.body.username != null) {
-    res.info.username = req.body.username
-  }
-  if (req.body.message != null) {
-    res.info.message = req.body.message
-  }
-  try {
-    const message = await res.info.save()
-    res.json(message)
-  } catch (err) {
-    res.status(400).json({ message: err.message })
-  }
-})
+// 特定のた Todo を取得
+router.get('/get/:tid', crudController.getSingleTodo);
 
-// Deleting one
-router.delete('/:id', getMessage, async (req, res) => {
-  try {
-    await res.info.remove();
-    res.json({ message: "Deleted message" })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-})
+// 入力されたデータを保存
+router.post('/post', [
+    body('name',"Provide a valid message").isLength({ min: 1 }).trim(),
+    body('status', "Provide a valid status").isBoolean()
+], crudController.postTodo);
 
-async function getMessage(req, res, next) {
-  let info;
-  try {
-    info = await schema.findById(req.params.id)
-    if (info == null) {
-      return res.status(404).json({ message: "Cannot find information" })
-    }
-  } catch (err) {
-    return res.status(500).json({ message: err.message })
-  }
-  res.info = info
-  next()
-}
+// データの更新
+router.put('/put/:tid', [
+    body('status', "Provide a valid status").isBoolean()
+], crudController.putTodo);
 
-module.exports = router
+// データの削除
+router.delete('/delete/:tid', crudController.deleteTodo);
+
+module.exports = router;
 ```
 
 <h2 id="env">.env</h2>
 
 ```
 SERVER_PORT=3000
-DATABASE_URL=mongodb://localhost/local
+DB=mongodb://127.0.0.1:27017/todos
 ```
 
 <h2 id="appjs">app.js</h2>
@@ -196,31 +286,20 @@ app.use('/api', restapiRouter)
 app.listen(process.env.SERVER_PORT, () => console.log('Server started.')
 ```
 
-<h2 id="route">route.rest</h2>
+<h2 id="test">api.rest</h2>
 
 ```
-GET http://localhost:3000/api
+GET http://127.0.0.1:8080/api/get
 
 ###
-GET http://localhost:3000/api/61e5d8e76943935b68fb19d1
+GET http://127.0.0.1:8080/api/get/:id // :id を書き換える
 
 ###
-POST http://localhost:3000/api
-Content-Type: application/json
+POST http://127.0.0.1:8080/api/post
+content-type: application/json
 
 {
-  "username" : "Anonymous",
-  "message": "Who am I?"
-}
-
-###
-DELETE http://localhost:3000/api/61e65f8b96d5666cae52c3c7
-
-###
-PATCH  http://localhost:3000/api/61e5d8e76943935b68fb19d1
-Content-Type: application/json
-
-{
-  "username" : "I've changed my name now."
+  "name": "上手く動いているかテスト",
+  "status": false
 }
 ```
