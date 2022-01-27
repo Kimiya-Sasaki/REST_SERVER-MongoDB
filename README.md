@@ -289,23 +289,23 @@ app.use("/api", crudRoutes);
 
 // Routes 以外でアクセスしてきた場合は error を返す
 app.use((error, req, res, next) => {
-    console.log(error);
-    res.status(error.statusCode || 500).json({
-        message: error.message,
-        data: error.data
-    });
+  console.log(error);
+  res.status(error.statusCode || 500).json({
+    message: error.message,
+    data: error.data
+  });
 });
 
 // MongoDB に接続して成功したら Server を立ち上げる
 mongoose.connect(process.env.DB)
-    .then(result => {
-        app.listen(process.env.PORT, () => {
-            console.log("Server listening on port "+process.env.PORT);
-        });
-    })
-    .catch(error => {
-        console.log(error);
+  .then(result => {
+    app.listen(process.env.PORT, () => {
+      console.log("Server listening on port "+process.env.PORT);
     });
+  })
+  .catch(error => {
+    console.log(error);
+  });
 ```
 
 <h2 id="test">api.rest</h2>
