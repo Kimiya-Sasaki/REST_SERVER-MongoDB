@@ -1,5 +1,5 @@
-# REST API SERVER + MongoDB
-Express (Node.js) と MongoDB を用いて RESTful な環境を構築する
+# REST API SERVER 構築
+express (Node.js) と MongoDB を用いて RESTful な Server 環境を構築
 # Table Of Contents
 - [事前準備](#prep)
 - [Directory 構成](#directories)
@@ -13,14 +13,14 @@ Express (Node.js) と MongoDB を用いて RESTful な環境を構築する
 <h2 id="prep">事前準備</h2>
 
 ### 以下のソフトウェアを事前にインストールしておく
-- Node.js
 - npm
+- npx
 - MongoDB
 - 適当な Project Folder を作成 e.g., reet-server
-- Project Folder 内で以下のコマンドを実行する
+- Project Folder 内で以下のコマンドを実行
 ```
 npm init -y
-npm i express mongoose nodemon dotenv
+npm i express mongoose nodemon dotenv express-validator
 ```
 |項 目|説 明|
 ----|----
@@ -28,6 +28,7 @@ npm i express mongoose nodemon dotenv
 |mongoose|MongoDB にアクセスするためのライブラリ|
 |nodemon|各種ファイルを修正したときに Server を Restert してくれる|
 |dotenv|.env ファイルにプログラムで参照する定数を定義する|
+|express-validator|入力情報の可否を検証するバリデータ|
 
 ### package.json の編集
 scripts の項目を以下の内容に置き換える
