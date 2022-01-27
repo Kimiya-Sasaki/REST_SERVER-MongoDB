@@ -4,7 +4,8 @@ express (Node.js) と MongoDB を用いて RESTful な Server 環境を構築
 - [事前準備](#prep)
 - [Directory 構成](#directories)
 - 各構成ファイルの詳細説明
-  - [schema.js](#schema)
+  - [crud.js](#crud)
+  - [todo.js](#schema)
   - [restapi.js](#restapi)
   - [.env](#env)
   - [app.js](#appjs)
@@ -59,30 +60,32 @@ Connected to Database
 
 |構 成|説 明|
 ----|----
-|<img src="./imgs/directories.jpg">|- schema.js: Table Schema を定義<br/>- restapi.js: REST API の Entrypoint<br/>- .env: 定数定義用<br/>- app.js: アプリケーション本体<br/>- route.rest: REST リクエストを容易に実現する|
+|<img src="./imgs/directories.jpg">|- crud.js: 実際の CRUD 処理<br/>- todo.js: Toto の DB Schema<br/>- api.js: REST APIs の Routes を定義<br/>- .env: 定数定義<br/>- api.rest: REST APIs デバッグ用<br/>- app.js: アプリケーション本体|
 
-<h2 id="schema">schema.js</h2>
+<h2 id="crud">crud.js</h2>
+
+<h2 id="schema">todo.js</h2>
+
+- 入力されたデータを保存する為の Schema を定義する
+- 項目として name, status を用意する
 
 ```javascript
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const apiSchema = new mongoose.Schema({
-  username: {
+const Schema = mongoose.Schema;
+
+const todoSchema = new Schema({
+  name: {
     type: String,
     required: true
   },
-  message: {
-    type: String,
-    required: true
-  },
-  date: {
-    type: Date,
-    required: true,
-    default: Date.now
+  status: {
+    type: Boolean,
+    require: true
   }
-})
+});
 
-module.exports = mongoose.model('messages', apiSchema)
+module.exports = mongoose.model('Todo', todoSchema);
 ```
 
 <h2 id="restapi">restapi.js</h2>
