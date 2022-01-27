@@ -142,7 +142,7 @@ exports.postTodo = (req, res, next) => {
     });
 };
 
-// データの更新
+// status だけを更新
 exports.putTodo = (req, res, next) => {
   const errors = validationResult(req);
   if(! errors.isEmpty()) {
@@ -242,13 +242,13 @@ router.get('/get/:tid', crudController.getSingleTodo);
 
 // 入力されたデータを保存
 router.post('/post', [
-    body('name',"Provide a valid message").isLength({ min: 1 }).trim(),
-    body('status', "Provide a valid status").isBoolean()
+  body('name',"Provide a valid message").isLength({ min: 1 }).trim(),
+  body('status', "Provide a valid status").isBoolean()
 ], crudController.postTodo);
 
 // データの更新
 router.put('/put/:tid', [
-    body('status', "Provide a valid status").isBoolean()
+  body('status', "Provide a valid status").isBoolean()
 ], crudController.putTodo);
 
 // データの削除
@@ -267,39 +267,73 @@ DB=mongodb://127.0.0.1:27017/todos
 <h2 id="appjs">app.js</h2>
 
 ```javascript
-require('dotenv').config()
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const crudRoutes = require('./routes/api');
 
-const express = require('express')
-const app = express()
-const mongoose = require('mongoose')
+// .env に定義された値を利用可能にする
+require('dotenv').config();
 
-mongoose.connect(process.env.DATABASE_URL)
-const db = mongoose.connection
-db.on('error', (error) => console.error(error))
-db.once('open', () => console.log('Connected to Database'))
+// REST APIs Server 用に express Framework 利用する
+const app = express();
 
-app.use(express.json())
+// CORS 対策
+app.use(cors());
 
-const restapiRouter = require('./routers/restapi')
-app.use('/api', restapiRouter)
- 
-app.listen(process.env.SERVER_PORT, () => console.log('Server started.')
+// JSON 形式でやり取りする宣言（REST APIs 用）
+app.use(express.json());
+
+// REST APIs の Routes（URIs） を読み込む
+app.use("/api", crudRoutes);
+
+// Routes 以外でアクセスしてきた場合は error を返す
+app.use((error, req, res, next) => {
+    console.log(error);
+    res.status(error.statusCode || 500).json({
+        message: error.message,
+        data: error.data
+    });
+});
+
+// MongoDB に接続して成功したら Server を立ち上げる
+mongoose.connect(process.env.DB)
+    .then(result => {
+        app.listen(process.env.PORT, () => {
+            console.log("Server listening on port "+process.env.PORT);
+        });
+    })
+    .catch(error => {
+        console.log(error);
+    });
 ```
 
 <h2 id="test">api.rest</h2>
 
+【:id に該当する部分は適宜変更すること】
 ```
-GET http://127.0.0.1:8080/api/get
+GET http://127.0.0.1:8080/api/todos
 
 ###
-GET http://127.0.0.1:8080/api/get/:id // :id を書き換える
+GET http://127.0.0.1:8080/api/todo/:id
 
 ###
-POST http://127.0.0.1:8080/api/post
+POST http://127.0.0.1:8080/api/todo
 content-type: application/json
 
 {
-  "name": "上手く動いているかテスト",
+  "name": "上手く動いているかな？",
   "status": false
 }
+
+###
+PUT http://127.0.0.1:8080/api/todo/:id
+content-type: application/json
+
+{
+  "status": true
+}
+
+###
+DELETE http://127.0.0.1:8080/api/todo/:id
 ```
