@@ -3,6 +3,7 @@ express (Node.js) と MongoDB を用いて RESTful な Server 環境を構築
 # Table Of Contents
 - [事前準備](#prep)
 - [Directory 構成](#directories)
+- [SSH 設定](#ssh)
 - 各構成ファイルの詳細
   - [crud.js](#crud)
   - [todo.js](#todo)
@@ -55,6 +56,24 @@ console output
 [nodemon] starting `node app.js`
 Server listening on port 8080
 </pre>
+
+<h2 id="ssh">SSH 設定</h2>
+
+以下のコマンドを実行すると privatekey.pem, cert.pem が作成される
+```
+cd <Project Folder>
+openssl req -x509 -newkey rsa:2048 -keyout privatekey.pem -out cert.pem -nodes
+```
+output: 問いには JP だけ設定すれば後はデフォルトで構わない
+```
+Country Name (2 letter code) []:JP
+State or Province Name (full name) []:
+Locality Name (eg, city) []:
+Organization Name (eg, company) []:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, fully qualified host name) []:
+Email Address []:
+```
 
 <h2 id="directories">Directry 構成</h2>
 
@@ -271,6 +290,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const crudRoutes = require('./routes/api');
+const fs = require('fs');
 
 // .env に定義された値を利用可能にする
 require('dotenv').config();
@@ -296,10 +316,16 @@ app.use((error, req, res, next) => {
   });
 });
 
+// SSH の設定
+const server = require('https').createServer({
+    key: fs.readFileSync('./privatekey.pem'),
+    cert: fs.readFileSync('./cert.pem'),
+}, app)
+
 // MongoDB に接続して成功したら Server を立ち上げる
 mongoose.connect(process.env.DB)
   .then(result => {
-    app.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
       console.log("Server listening on port "+process.env.PORT);
     });
   })
