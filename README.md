@@ -20,6 +20,7 @@ express (Node.js) と MongoDB を用いて RESTful な Server 環境を構築
 - npx
 - MongoDB
 - 適当な Project Folder を作成 e.g., reet-server
+- api.rest を利用するには VSCode に REST Client Plugin を install する必要あり
 - Project Folder 内で以下のコマンドを実行
 ```
 npm init -y
